@@ -1,0 +1,13 @@
+node_modules/ 
+.next/ 
+.env
+.env.local 
+.DS_Store 
+*.log 
+out/
+.firebase/
+/user_data_legal_bot
+/user_data
+/user_data_bot
+/bot_profile
+

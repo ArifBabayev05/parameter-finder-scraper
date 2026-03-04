@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kontakt | Parametr Axtarışı</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ef4444;
+            /* Kontakt Red */
+            --primary-dark: #dc2626;
+            --bg: #fdfdfd;
+            --sidebar-bg: #1a1a1a;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --text-muted: #6b7280;
+            --border: #f3f4f6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        aside {
+            width: 260px;
+            background: var(--sidebar-bg);
+            color: white;
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 500;
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .nav-item:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            padding: 2rem 3rem;
+            overflow-y: auto;
+        }
+
+        header {
+            margin-bottom: 2.5rem;
+        }
+
+        header h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Search Section */
+        .search-container {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        input {
+            flex: 1;
+            padding: 0.875rem 1.25rem;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            outline: none;
+            font-size: 1rem;
+            transition: 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.875rem 2.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: var(--primary-dark);
+        }
+
+        button:disabled {
+            background: #fca5a5;
+        }
+
+        /* Suggestions */
+        .suggestions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            font-size: 0.875rem;
+        }
+
+        .suggestion-chip {
+            padding: 0.4rem 1rem;
+            background: #fee2e2;
+            color: var(--primary-dark);
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+
+        .suggestion-chip:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Progress Bar */
+        #progressArea {
+            margin: 2rem 0;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .progress-track {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        #progressBar {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        #statusText {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        /* Results Area */
+        .results-header-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 1rem;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        th,
+        td {
+            padding: 1rem 1.25rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        .param-col {
+            width: 220px;
+            font-weight: 600;
+            background: #f9fafb;
+            color: var(--text);
+            border-right: 1px solid var(--border);
+        }
+
+        .consensus-col {
+            background: #fff1f2;
+            color: var(--primary-dark);
+            font-weight: 700;
+            border-right: 1px solid #fecaca;
+        }
+
+        .val-found {
+            color: #059669;
+            font-weight: 500;
+        }
+
+        .val-none {
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            padding: 0.6rem 1.2rem;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            transition: 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .download-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* History Area */
+        .history-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .history-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+
+        .history-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .history-card h3 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .history-card p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <aside>
+        <div class="logo">
+            <span style="background: var(--primary); color: white; padding: 0.2rem 0.6rem; border-radius: 4px;">K</span>
+            KONTAKT
+        </div>
+        <nav>
+            <div id="navSearch" class="nav-item active" onclick="switchTab('search')">
+                <span>🔍</span> Parametr Axtarışı
+            </div>
+            <div id="navHistory" class="nav-item" onclick="switchTab('history')">
+                <span>📊</span> Tarixçə
+            </div>
+            <div class="nav-item">
+                <span>⚙️</span> Ayarlar
+            </div>
+        </nav>
+    </aside>
+
+    <main>
+        <div id="searchTab">
+            <header>
+                <h1>Parametr Axtarışı</h1>
+                <p style="color: var(--text-muted)">Effektiv və sürətli məhsul analiz sistemi</p>
+            </header>
+
+            <section class="search-container">
+                <div class="search-box">
+                    <input type="text" id="query" placeholder="Məhsul adını və ya modelini daxil edin...">
+                    <button id="searchBtn">Axtar</button>
+                </div>
+                <div class="suggestions">
+                    <span
+                        style="color: var(--text-muted); margin-right: 0.5rem; display: flex; align-items: center;">Təkliflər:</span>
+                    <div class="suggestion-chip" onclick="setQuery('Samsung Galaxy S26 Ultra')">S26 Ultra</div>
+                    <div class="suggestion-chip" onclick="setQuery('iPhone 15 Pro Max')">iPhone 15 Pro</div>
+                    <div class="suggestion-chip" onclick="setQuery('Xiaomi 14 Ultra')">Xiaomi 14 Ultra</div>
+                    <div class="suggestion-chip" onclick="setQuery('SM-S938W')">SM-S938W</div>
+                </div>
+            </section>
+
+            <section id="progressArea" class="hidden">
+                <div class="progress-header">
+                    <span id="progressTitle">Prosessi həyata keçirilir...</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="progress-track">
+                    <div id="progressBar"></div>
+                </div>
+                <p id="statusText">Saytlar analiz edilir...</p>
+            </section>
+
+            <section id="resultsArea" class="hidden">
+                <div class="results-header-actions">
+                    <a href="#" id="downloadBtn" class="download-btn hidden">
+                        <span>📥</span> Hesabatı Yüklə (.txt)
+                    </a>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead id="tableHead"></thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <div id="historyTab" class="hidden">
+            <header>
+                <h1>Tarixçə</h1>
+                <p style="color: var(--text-muted)">Əvvəlki axtarışlarınızın nəticələri</p>
+            </header>
+            <div id="historyList" class="history-list">
+                <!-- History cards will be here -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const queryInput = document.getElementById('query');
+        const searchBtn = document.getElementById('searchBtn');
+        const progressArea = document.getElementById('progressArea');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const statusText = document.getElementById('statusText');
+        const resultsArea = document.getElementById('resultsArea');
+        const tableBody = document.getElementById('tableBody');
+        const tableHead = document.getElementById('tableHead');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const historyList = document.getElementById('historyList');
+
+        // Navigation
+        function switchTab(tab) {
+            document.getElementById('searchTab').classList.toggle('hidden', tab !== 'search');
+            document.getElementById('historyTab').classList.toggle('hidden', tab !== 'history');
+            document.getElementById('navSearch').classList.toggle('active', tab === 'search');
+            document.getElementById('navHistory').classList.toggle('active', tab === 'history');
+
+            if (tab === 'history') loadHistory();
+        }
+
+        function setQuery(text) {
+            queryInput.value = text;
+            startScrape();
+        }
+
+        async function startScrape() {
+            const query = queryInput.value.trim();
+            if (!query) return;
+
+            searchBtn.disabled = true;
+            progressArea.classList.remove('hidden');
+            resultsArea.classList.add('hidden');
+            updateProgress(10, 'Brauzer mühərriki işə düşür...');
+
+            try {
+                const progInterval = setInterval(() => {
+                    const currentWidth = parseInt(progressBar.style.width) || 0;
+                    if (currentWidth < 90) {
+                        updateProgress(currentWidth + 2, 'Məlumatlar toplanır...');
+                    }
+                }, 1000);
+
+                const response = await fetch('/scrape', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+
+                clearInterval(progInterval);
+                const data = await response.json();
+
+                updateProgress(100, 'Tamamlandı!');
+                setTimeout(() => {
+                    progressArea.classList.add('hidden');
+                    saveToHistory(query, data);
+                    renderTable(data);
+                }, 800);
+
+            } catch (err) {
+                updateProgress(0, 'Xəta baş verdi: ' + err.message);
+                searchBtn.disabled = false;
+            } finally {
+                searchBtn.disabled = false;
+            }
+        }
+
+        function updateProgress(percent, text) {
+            progressBar.style.width = percent + '%';
+            progressPercent.innerText = percent + '%';
+            if (text) statusText.innerText = text;
+        }
+
+        // History Logic
+        function saveToHistory(query, data) {
+            const history = JSON.parse(localStorage.getItem('scrape_history') || '[]');
+            const newItem = {
+                id: Date.now(),
+                query: query,
+                date: new Date().toLocaleString('az-AZ'),
+                data: data
+            };
+            history.unshift(newItem);
+            localStorage.setItem('scrape_history', JSON.stringify(history.slice(0, 20))); // Keep last 20
+        }
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('scrape_history') || '[]');
+            historyList.innerHTML = history.length ? '' : '<p style="color: var(--text-muted)">Hələ ki axtarış tarixçəsi yoxdur.</p>';
+
+            history.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'history-card';
+                card.innerHTML = `
+                    <h3>${item.query}</h3>
+                    <p>📅 ${item.date}</p>
+                    <p>🌐 ${item.data.results.filter(r => r.success).length} saytdan data</p>
+                `;
+                card.onclick = () => {
+                    switchTab('search');
+                    renderTable(item.data);
+                    queryInput.value = item.query;
+                };
+                historyList.appendChild(card);
+            });
+        }
+
+        function renderTable(data) {
+            resultsArea.classList.remove('hidden');
+            if (data.file) {
+                downloadBtn.href = '/download/' + data.file;
+                downloadBtn.classList.remove('hidden');
+            } else {
+                downloadBtn.classList.add('hidden');
+            }
+
+            // Header
+            let headHtml = '<tr><th class="param-col">Parametr</th><th class="consensus-col">Yekun</th>';
+            data.results.forEach(res => {
+                const link = res.url ? `<a href="${res.url}" target="_blank" style="color: inherit; text-decoration: none;">${res.site} 🔗</a>` : res.site;
+                headHtml += `<th>${link}</th>`;
+            });
+            headHtml += '</tr>';
+            tableHead.innerHTML = headHtml;
+
+            // Body
+            let bodyHtml = '';
+            data.parameters.forEach(p => {
+                let row = `<tr><td class="param-col">${p.name}</td>`;
+                const consensusVal = data.consensus[p.name] || 'Tapılmadı';
+                row += `<td class="consensus-col">${consensusVal}</td>`;
+
+                data.results.forEach(res => {
+                    const val = res.success ? (res.data[p.name] || 'Tapılmadı') : 'Xəta';
+                    const isNotFound = val === 'Tapılmadı' || val === 'Not found' || val === 'Xəta';
+                    row += `<td class="${isNotFound ? 'val-none' : 'val-found'}">${val}</td>`;
+                });
+
+                row += '</tr>';
+                bodyHtml += row;
+            });
+            tableBody.innerHTML = bodyHtml;
+        }
+
+        searchBtn.addEventListener('click', startScrape);
+        queryInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') startScrape(); });
+    </script>
+</body>
+
+</html>

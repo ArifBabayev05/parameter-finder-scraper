@@ -1,0 +1,8 @@
+node_modules
+npm-debug.log
+.gemini
+scrape_results_*.txt
+*.json (excluding package.json)
+!package.json
+analyze_labels.js
+test_scrape.js

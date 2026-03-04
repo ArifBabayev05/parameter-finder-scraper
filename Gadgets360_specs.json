@@ -1,0 +1,206 @@
+[
+  {
+    "key": "Product Name",
+    "value": "Price in India"
+  },
+  {
+    "key": "Samsung Galaxy S26 Ultra (12GB RAM, 512GB) - Black",
+    "value": "₹ 139,999"
+  },
+  {
+    "key": "Brand",
+    "value": "Samsung"
+  },
+  {
+    "key": "Model",
+    "value": "Galaxy S26 Ultra"
+  },
+  {
+    "key": "Price in India",
+    "value": "₹139,999"
+  },
+  {
+    "key": "Release date",
+    "value": "25th February 2026"
+  },
+  {
+    "key": "AI Enabled",
+    "value": "Yes"
+  },
+  {
+    "key": "Launched in India",
+    "value": "Yes"
+  },
+  {
+    "key": "Form factor",
+    "value": "Touchscreen"
+  },
+  {
+    "key": "Dimensions (mm)",
+    "value": "163.60 x 78.10 x 7.90"
+  },
+  {
+    "key": "Weight (g)",
+    "value": "214.00"
+  },
+  {
+    "key": "Battery capacity (mAh)",
+    "value": "5000"
+  },
+  {
+    "key": "Removable battery",
+    "value": "No"
+  },
+  {
+    "key": "Fast charging",
+    "value": "60W Fast Charging"
+  },
+  {
+    "key": "Wireless charging",
+    "value": "Yes"
+  },
+  {
+    "key": "Wireless Charging Type",
+    "value": "25W"
+  },
+  {
+    "key": "Colours",
+    "value": "Black, Blue, Purple, White"
+  },
+  {
+    "key": "Refresh Rate",
+    "value": "120 Hz"
+  },
+  {
+    "key": "Resolution Standard",
+    "value": "1.5K"
+  },
+  {
+    "key": "Screen size (inches)",
+    "value": "6.90"
+  },
+  {
+    "key": "Touchscreen",
+    "value": "Yes"
+  },
+  {
+    "key": "Resolution",
+    "value": "1,440x3,120 pixels"
+  },
+  {
+    "key": "Protection type",
+    "value": "Gorilla Armor 2"
+  },
+  {
+    "key": "Processor make",
+    "value": "Snapdragon 8 Elite Gen 5"
+  },
+  {
+    "key": "RAM",
+    "value": "12GB, 16GB"
+  },
+  {
+    "key": "Internal storage",
+    "value": "256GB, 512GB, 1024GB"
+  },
+  {
+    "key": "Rear camera",
+    "value": "200-megapixel (f/1.4) + 50-megapixel (f/2.8) + 50-megapixel (f/1.9) + 10-megapixel (f/2.4)"
+  },
+  {
+    "key": "No. of Rear Cameras",
+    "value": "4"
+  },
+  {
+    "key": "Rear flash",
+    "value": "Yes"
+  },
+  {
+    "key": "Front camera",
+    "value": "12-megapixel (f/2.2)"
+  },
+  {
+    "key": "No. of Front Cameras",
+    "value": "1"
+  },
+  {
+    "key": "Lens Type (Second Rear Camera)",
+    "value": "Telephoto"
+  },
+  {
+    "key": "Lens Type (Third Rear Camera)",
+    "value": "Ultra Wide-Angle"
+  },
+  {
+    "key": "Lens Type (Fourth Rear Camera)",
+    "value": "Telephoto"
+  },
+  {
+    "key": "Operating system",
+    "value": "Android 16"
+  },
+  {
+    "key": "Skin",
+    "value": "One UI 8.5"
+  },
+  {
+    "key": "Wi-Fi",
+    "value": "Yes"
+  },
+  {
+    "key": "GPS",
+    "value": "Yes"
+  },
+  {
+    "key": "Bluetooth",
+    "value": "Yes, v 5.40"
+  },
+  {
+    "key": "NFC",
+    "value": "Yes"
+  },
+  {
+    "key": "USB Type-C",
+    "value": "Yes"
+  },
+  {
+    "key": "Headphones",
+    "value": "Type-C"
+  },
+  {
+    "key": "Number of SIMs",
+    "value": "2"
+  },
+  {
+    "key": "Active 4G on both SIM cards",
+    "value": "Yes"
+  },
+  {
+    "key": "SIM Type",
+    "value": "Nano-SIM"
+  },
+  {
+    "key": "SIM Type",
+    "value": "Nano-SIM"
+  },
+  {
+    "key": "In-Display Fingerprint Sensor",
+    "value": "Yes"
+  },
+  {
+    "key": "Proximity sensor",
+    "value": "Yes"
+  },
+  {
+    "key": "Accelerometer",
+    "value": "Yes"
+  },
+  {
+    "key": "Ambient light sensor",
+    "value": "Yes"
+  },
+  {
+    "key": "Gyroscope",
+    "value": "Yes"
+  }
+]
