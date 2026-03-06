@@ -8,7 +8,7 @@ const cors = require('cors');
 puppeteer.use(StealthPlugin());
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
@@ -86,28 +86,31 @@ const parametersMap = [
     // { name: "Zəmanət", synonyms: ["Гарантия", "Warranty"] }
 ];
 
-async function scrapeProduct(siteConfig, query) {
-    let browser;
-    try {
-        browser = await puppeteer.launch({
-            headless: process.env.HEADLESS === 'false' ? false : "new",
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-gpu'
-            ],
-            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null
-        });
-        const page = await browser.newPage();
+async function getSystemChromePath() {
+    const paths = [
+        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+        "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+        process.env.LOCALAPPDATA + "\\Google\\Chrome\\Application\\chrome.exe",
+        "/usr/bin/google-chrome",
+        "/usr/bin/chromium-browser"
+    ];
 
-        // Block heavy media and tracking scripts that often cause timeouts
+    for (const path of paths) {
+        if (fs.existsSync(path)) return path;
+    }
+    return null;
+}
+
+async function scrapeProduct(browser, siteConfig, query) {
+    const page = await browser.newPage();
+    try {
+        // Block heavy media and tracking scripts
         await page.setRequestInterception(true);
         page.on('request', (req) => {
             const url = req.url().toLowerCase();
             const resourceType = req.resourceType();
             const isTracker = url.includes('google-analytics') || url.includes('facebook') || url.includes('doubleclick') || url.includes('analytics');
-
             if (['image', 'font', 'media'].includes(resourceType) || isTracker) {
                 req.abort();
             } else {
@@ -116,23 +119,20 @@ async function scrapeProduct(siteConfig, query) {
         });
 
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-        await page.setDefaultNavigationTimeout(45000);
+        await page.setDefaultNavigationTimeout(50000);
 
         const targetUrl = siteConfig.ddgSite
             ? `https://html.duckduckgo.com/html/?q=site:${siteConfig.ddgSite}+${encodeURIComponent(query)}`
             : (siteConfig.searchUrl ? siteConfig.searchUrl.replace('{{query}}', encodeURIComponent(query)) : siteConfig.url);
 
         console.log(`[${siteConfig.name}] Opening: ${targetUrl}`);
-
-        const response = await page.goto(targetUrl, { waitUntil: 'domcontentloaded' }).catch(e => console.log(`[${siteConfig.name}] Navigation warning: ${e.message}`));
+        await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 50000 }).catch(e => console.log(`[${siteConfig.name}] Navigation warning: ${e.message}`));
 
         // Anti-bot bypass delay
         await new Promise(r => setTimeout(r, 2000));
 
         let firstLink;
-
         if (siteConfig.ddgSite) {
-            // Extract from DuckDuckGo
             firstLink = await page.evaluate(() => {
                 const links = Array.from(document.querySelectorAll('.result__url'));
                 if (links.length > 0) {
@@ -147,192 +147,81 @@ async function scrapeProduct(siteConfig, query) {
                 return null;
             });
         } else {
-            // General Smart Link Discovery for GSMArena
             firstLink = await page.evaluate((selector, queryText) => {
                 const tokens = queryText.toLowerCase().split(/\s+/).filter(t => t.length > 2);
                 let links = selector ? Array.from(document.querySelectorAll(selector)) : Array.from(document.querySelectorAll('a'));
-
                 const rankedLinks = links.map(a => {
                     const text = (a.innerText || "").toLowerCase();
                     const score = tokens.reduce((acc, t) => acc + (text.includes(t) ? 1 : 0), 0);
                     return { href: a.href, score, text };
                 }).filter(l => l.score > 0 || l.text.length > 5);
-
                 rankedLinks.sort((a, b) => b.score - a.score || a.text.length - b.text.length);
                 return rankedLinks[0]?.href;
             }, siteConfig.resultSelector, query);
         }
 
-        if (!firstLink) throw new Error("Product link not found in results");
+        if (!firstLink) throw new Error("Link tapılmadı");
 
         console.log(`[${siteConfig.name}] Loading details: ${firstLink}`);
-        // Navigate to details
-        await page.goto(firstLink, { waitUntil: 'domcontentloaded', timeout: 35000 }).catch(e => {
-            console.log(`[${siteConfig.name}] Details page load warning: ${e.message}`);
+        await page.goto(firstLink, { waitUntil: 'domcontentloaded', timeout: 50000 });
+
+        // Handle "Show All"
+        await page.evaluate(async () => {
+            const texts = ["Və daha çox", "Все характеристики", "Full specs", "Show all", "See detailed", "Expand"];
+            const elements = Array.from(document.querySelectorAll('button, a, span'));
+            for (const text of texts) {
+                const found = elements.find(el => el.innerText.toLowerCase().includes(text.toLowerCase()));
+                if (found) { found.click(); break; }
+            }
         });
 
-        // CRITICAL: Handle "Show All" / "Все характеристики"
-        await page.evaluate(async (showMoreLabels) => {
-            const clickElementByText = (texts) => {
-                const elements = Array.from(document.querySelectorAll('button, a, span, label, div'));
-                for (const text of texts) {
-                    const found = elements.find(el => (el.innerText || "").toLowerCase().trim() === text.toLowerCase().trim() || (el.innerText || "").toLowerCase().includes(text.toLowerCase()));
-                    if (found) {
-                        found.click();
-                        return true;
-                    }
-                }
-                return false;
-            };
+        await new Promise(r => setTimeout(r, 4000));
 
-            const labels = showMoreLabels || [
-                'все характеристики',
-                'все параметры',
-                'полные характеристики',
-                'показать все',
-                'show all',
-                'full specifications',
-                'характеристики'
-            ];
-            clickElementByText(labels);
-        }).catch(() => { });
-
-        // Wait for potential content expansion
-        await new Promise(r => setTimeout(r, 3000));
-
-        const extractedData = await page.evaluate((params) => {
+        const extractedData = await page.evaluate((params, parametersMap) => {
             const results = {};
-
             const findValueForLabel = (labelSynonyms, paramName) => {
-                const host = window.location.host.toLowerCase();
+                const host = window.location.hostname;
+                const ttlElements = Array.from(document.querySelectorAll('.ttl, .label, dt, th, td, .cell-title, .k-spec-list dt, .k-dl-row dt, span, li'));
 
-                // specialized GSMArena Logic
-                if (host.includes('gsmarena')) {
-                    const ttlElements = Array.from(document.querySelectorAll('.ttl'));
-                    for (const ttl of ttlElements) {
-                        const ttlText = (ttl.innerText || "").trim().toLowerCase();
-                        for (const syn of labelSynonyms) {
-                            if (ttlText === syn.toLowerCase()) {
-                                const valEl = ttl.nextElementSibling;
-                                if (valEl && valEl.classList.contains('nfo')) return valEl.innerText.trim();
-                            }
-                        }
-                    }
+                for (const syn of labelSynonyms) {
+                    const found = ttlElements.find(el => el.innerText.toLowerCase().trim() === syn.toLowerCase().trim() || el.innerText.toLowerCase().includes(syn.toLowerCase()));
+                    if (found) {
+                        let val = "";
+                        if (found.nextElementSibling) val = found.nextElementSibling.innerText.trim();
+                        else if (found.parentElement?.nextElementSibling) val = found.parentElement.nextElementSibling.innerText.trim();
+                        else if (found.tagName === 'TD' && found.nextElementSibling) val = found.nextElementSibling.innerText.trim();
 
-                    if (["Barmaq izi oxuyucusu", "Akselerometr", "Barometr", "Giroskop", "İşıq sensoru", "Yaxınlaşdırma sensoru"].includes(paramName)) {
-                        const sensorTTL = ttlElements.find(t => t.innerText.toLowerCase().includes('sensors'));
-                        if (sensorTTL) {
-                            const val = sensorTTL.nextElementSibling?.innerText || "";
-                            let foundSpecific = false;
-                            for (const syn of labelSynonyms) {
-                                if (val.toLowerCase().includes(syn.toLowerCase())) {
-                                    foundSpecific = true;
-                                    break;
-                                }
-                            }
-                            if (foundSpecific) return val;
-                        }
-                    }
-
-                    if (paramName === "Operativ yaddaş" || paramName === "Daxili yaddaş") {
-                        const internalTTL = ttlElements.find(t => t.innerText.toLowerCase() === 'internal');
-                        if (internalTTL) {
-                            const fullVal = internalTTL.nextElementSibling?.innerText || "";
-                            if (paramName === "Operativ yaddaş" && (fullVal.includes('RAM') || fullVal.includes('GB'))) {
-                                const ramMatch = fullVal.match(/(\d+GB)\s+RAM/) || fullVal.match(/(\d+\s+GB)\s+RAM/) || fullVal.match(/(\d+)\s+RAM/);
-                                if (ramMatch) return ramMatch[1] + (ramMatch[1].includes('GB') ? '' : 'GB');
-                                return fullVal.split(',')[0].trim();
-                            }
-                            return fullVal.split(',')[0].trim();
-                        }
+                        if (val && val.length < 500) return val;
                     }
                 }
 
-                // specialized DeviceSpecifications and Gadgets360 Logic
-                if (host.includes('devicespecifications') || host.includes('gadgets360')) {
-                    const tables = Array.from(document.querySelectorAll('table, .specs-table, .specifications-table, ._tbl'));
-                    for (const table of tables) {
-                        const rows = Array.from(table.querySelectorAll('tr, .table-row'));
-                        for (const row of rows) {
-                            const cells = Array.from(row.querySelectorAll('td, th, .table-cell'));
-                            if (cells.length >= 2) {
-                                const label = cells[0].innerText.trim().toLowerCase();
-                                for (const syn of labelSynonyms) {
-                                    if (label === syn.toLowerCase() || label.includes(syn.toLowerCase())) {
-                                        return cells[cells.length - 1].innerText.trim();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // specialized NanoReview Logic
-                if (host.includes('nanoreview')) {
-                    const specRows = Array.from(document.querySelectorAll('.cell-title, .cell-value'));
-                    for (let i = 0; i < specRows.length; i++) {
-                        const label = specRows[i].innerText.trim().toLowerCase();
-                        for (const syn of labelSynonyms) {
-                            if (label === syn.toLowerCase()) {
-                                if (specRows[i + 1]) return specRows[i + 1].innerText.trim();
-                            }
-                        }
-                    }
-                }
-
-                // specialized Kimovil Logic
-                if (host.includes('kimovil')) {
-                    const specLists = Array.from(document.querySelectorAll('.k-spec-list dt, .k-spec-list dd, .k-dl-row dt, .k-dl-row dd'));
-                    for (let i = 0; i < specLists.length; i++) {
-                        const text = specLists[i].innerText.toLowerCase();
-                        for (const syn of labelSynonyms) {
-                            if (text.includes(syn.toLowerCase()) && specLists[i + 1]) {
-                                return specLists[i + 1].innerText.trim();
-                            }
-                        }
-                    }
-                }
-
-                // General Logic
-                const structuralElements = Array.from(document.querySelectorAll('tr, li, dt, .item, .spec-row, [class*="attr" i], [class*="spec" i]'));
-                for (const row of structuralElements) {
-                    const rowText = (row.innerText || "").toLowerCase();
+                // Fallback for tables
+                const rows = Array.from(document.querySelectorAll('tr, li, .item'));
+                for (const row of rows) {
+                    const text = row.innerText.toLowerCase();
                     for (const syn of labelSynonyms) {
-                        const lowSyn = syn.toLowerCase();
-
-                        const regex = new RegExp(`\\b${lowSyn}\\b`, 'i');
-                        if (regex.test(rowText)) {
-                            if (row.innerText.length > 500) continue;
-
-                            if (row.tagName === 'DT' && row.nextElementSibling && row.nextElementSibling.tagName === 'DD') {
-                                return row.nextElementSibling.innerText.trim();
-                            }
-                            if (row.tagName === 'TR') {
-                                const cells = Array.from(row.querySelectorAll('td, th'));
-                                if (cells.length > 1) return cells[cells.length - 1].innerText.trim();
-                            }
-
+                        if (text.includes(syn.toLowerCase())) {
                             let val = row.innerText.replace(new RegExp(syn, 'i'), '').trim();
                             val = val.replace(/^[:\-\s]+/, '').trim();
-                            if (val && val.length > 0 && val.length < 200 && !val.includes('\n')) return val;
+                            if (val && val.length < 200 && !val.includes('\n')) return val;
                         }
                     }
                 }
                 return null;
             };
 
-            params.forEach(p => {
+            parametersMap.forEach(p => {
                 results[p.name] = findValueForLabel(p.synonyms, p.name) || "Not found";
             });
             return results;
         }, parametersMap);
 
-        await browser.close();
-        console.log(`[${siteConfig.name}] Scraped successfully.`);
+        await page.close();
+        console.log(`[${siteConfig.name}] Done.`);
         return { site: siteConfig.name, success: true, data: extractedData, url: firstLink };
     } catch (error) {
         console.error(`[${siteConfig.name}] Error: ${error.message}`);
-        if (browser) await browser.close();
+        await page.close().catch(() => { });
         return { site: siteConfig.name, success: false, error: error.message };
     }
 }
@@ -342,21 +231,35 @@ app.post('/scrape', async (req, res) => {
     if (!query) return res.status(400).send({ error: "Query is required" });
 
     const activeSites = sites ? siteConfigs.filter(s => sites.includes(s.name)) : siteConfigs;
+    console.log(`Starting SEQUENTIAL scraping for: ${query} on ${activeSites.length} sites...`);
 
-    console.log(`Starting PARALLEL scraping for: ${query} on ${activeSites.length} sites...`);
+    let browser;
+    const finalResults = [];
 
-    // Execute all site scrapers in parallel for maximum speed
-    const finalResults = await Promise.all(activeSites.map(site => scrapeProduct(site, query)));
+    try {
+        const chromePath = await getSystemChromePath();
+        browser = await puppeteer.launch({
+            headless: process.env.HEADLESS === 'false' ? false : "new",
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+            executablePath: chromePath || process.env.PUPPETEER_EXECUTABLE_PATH || null
+        });
 
-    // Calculate Consensus (Most Frequent Values)
+        // Run one by one to save RAM on Render Free Tier
+        for (const site of activeSites) {
+            const result = await scrapeProduct(browser, site, query);
+            finalResults.push(result);
+        }
+
+    } catch (err) {
+        console.error("Global Scrape Error:", err);
+    } finally {
+        if (browser) await browser.close();
+    }
+
     const consensus = {};
     parametersMap.forEach(p => {
-        const values = finalResults
-            .filter(r => r.success && r.data[p.name] && r.data[p.name] !== "Not found")
-            .map(r => r.data[p.name]);
-
+        const values = finalResults.filter(r => r.success && r.data[p.name] && r.data[p.name] !== "Not found").map(r => r.data[p.name]);
         if (values.length > 0) {
-            // Simple frequency count
             const counts = {};
             values.forEach(v => counts[v] = (counts[v] || 0) + 1);
             consensus[p.name] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
@@ -390,13 +293,7 @@ app.post('/scrape', async (req, res) => {
     const fileName = `scrape_results_${Date.now()}.txt`;
     await fs.writeFile(path.join(__dirname, fileName), report);
 
-    res.send({
-        message: "Scraping completed",
-        results: finalResults,
-        consensus: consensus,
-        parameters: parametersMap,
-        file: fileName
-    });
+    res.send({ results: finalResults, consensus: consensus, parameters: parametersMap, file: fileName });
 });
 
 app.get('/download/:filename', (req, res) => {
