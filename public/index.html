@@ -531,9 +531,20 @@
                 row += `<td class="consensus-col">${consensusVal}</td>`;
 
                 data.results.forEach(res => {
-                    const val = res.success ? (res.data[p.name] || 'Tapılmadı') : 'Xəta';
-                    const isNotFound = val === 'Tapılmadı' || val === 'Not found' || val === 'Xəta';
-                    row += `<td class="${isNotFound ? 'val-none' : 'val-found'}">${val}</td>`;
+                    let val = 'Tapılmadı';
+                    let statusClass = 'val-none';
+                    let title = '';
+
+                    if (res.success) {
+                        val = res.data[p.name] || 'Tapılmadı';
+                        if (val !== 'Tapılmadı') statusClass = 'val-found';
+                    } else {
+                        val = 'Xəta';
+                        statusClass = 'val-none';
+                        title = res.error || 'Naməlum xəta';
+                    }
+
+                    row += `<td class="${statusClass}" title="${title}">${val}${!res.success ? '<br><small style="font-size:10px; color:#ef4444">' + title + '</small>' : ''}</td>`;
                 });
 
                 row += '</tr>';

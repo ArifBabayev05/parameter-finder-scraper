@@ -102,31 +102,38 @@ async function getSystemChromePath() {
     return null;
 }
 
+// Health check for Render
+app.get('/health', (req, res) => res.status(200).send('OK'));
+
 async function scrapeProduct(browser, siteConfig, query) {
     const page = await browser.newPage();
     try {
-        // Block heavy media and tracking scripts
+        // Set realistic viewport and headers
+        await page.setViewport({ width: 1280, height: 800 });
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36');
+
+        // Block only very heavy resources to save RAM without breaking logic
         await page.setRequestInterception(true);
         page.on('request', (req) => {
-            const url = req.url().toLowerCase();
-            const resourceType = req.resourceType();
-            const isTracker = url.includes('google-analytics') || url.includes('facebook') || url.includes('doubleclick') || url.includes('analytics');
-            if (['image', 'font', 'media'].includes(resourceType) || isTracker) {
-                req.abort();
-            } else {
-                req.continue();
-            }
+            const type = req.resourceType();
+            if (['image', 'media', 'font'].includes(type)) req.abort();
+            else req.continue();
         });
-
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-        await page.setDefaultNavigationTimeout(50000);
 
         const targetUrl = siteConfig.ddgSite
             ? `https://html.duckduckgo.com/html/?q=site:${siteConfig.ddgSite}+${encodeURIComponent(query)}`
             : (siteConfig.searchUrl ? siteConfig.searchUrl.replace('{{query}}', encodeURIComponent(query)) : siteConfig.url);
 
-        console.log(`[${siteConfig.name}] Opening: ${targetUrl}`);
-        await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 50000 }).catch(e => console.log(`[${siteConfig.name}] Navigation warning: ${e.message}`));
+        console.log(`[${siteConfig.name}] Navigating to: ${targetUrl}`);
+
+        // Use a longer timeout and wait for network to be somewhat idle
+        await page.goto(targetUrl, {
+            waitUntil: 'networkidle2',
+            timeout: 60000
+        }).catch(e => {
+            console.error(`[${siteConfig.name}] Navigation to ${targetUrl} failed: ${e.message}`);
+            throw e; // Re-throw to be caught by the outer try-catch
+        });
 
         // Anti-bot bypass delay
         await new Promise(r => setTimeout(r, 2000));
